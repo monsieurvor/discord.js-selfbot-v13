@@ -37,6 +37,31 @@ module.exports = class CaptchaSolver {
         } catch (e) {
           throw this._missingModule('2captcha');
         }
+      case 'custom': {
+        if (!key || typeof key !== 'string') throw new Error('anticaptcha key is not provided');
+        try {
+            const ac = require('@antiadmin/anticaptchaofficial');
+            this.service = 'anticaptcha';
+            this.solve = (data, userAgent) =>
+                new Promise((resolve, reject) => {
+                    const siteKey = data.captcha_sitekey;
+                    const enterprisePayload = data.captcha_rqdata
+                        ? {
+                            "rqdata": data.captcha_rqdata,
+                        }
+                        : undefined;
+                    ac.setAPIKey(key);
+                    ac.setSoftId(0);
+                    ac.solveHCaptchaProxyless('https://discord.com/channels/@me', siteKey, userAgent, enterprisePayload, false)
+                        .then(res => {
+                            resolve(res);
+                        })
+                        .catch(reject);
+                });
+            break;
+        } catch (e) {
+            throw this._missingModule('anticaptchaofficial');
+        }
       }
       default: {
         this.solve = this.defaultCaptchaSolver;
